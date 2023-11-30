@@ -1,0 +1,65 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 27.11.2023 15:41:05
+// Design Name: 
+// Module Name: PruebaD
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+module PruebaD (
+    input wire clk,
+    input wire reset,
+    input wire btn_ingreso,
+    input wire btn_verificar,
+    output reg verificacion_exitosa,
+    output reg [2:0] dinero_ingresado = 3'b000
+);
+
+    reg [2:0] STATE_INGRESO = 3'b000;
+    reg [2:0] STATE_VERIFICACION = 3'b001;
+    reg [2:0] estado_actual, estado_siguiente;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            estado_actual <= STATE_INGRESO;
+            dinero_ingresado <= 3'b000;
+            verificacion_exitosa <= 1'b0;
+        end else begin
+            case (estado_actual)
+                STATE_INGRESO:
+                    begin
+                        if (btn_ingreso) begin
+                            if (dinero_ingresado == 3'b011) begin
+                                dinero_ingresado <= 3'b000; // Reinicia a cero si llega a tres
+                            end else begin
+                                dinero_ingresado <= dinero_ingresado + 1; // Incrementa en uno
+                            end
+                        end else if (btn_verificar && dinero_ingresado == 3'b010) begin
+                            verificacion_exitosa <= 1'b1; // Activa la verificación exitosa si es igual a dos
+                        end
+                    end
+            endcase // Agrega este endcase para cerrar la estructura case
+        end
+    end
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            estado_actual <= STATE_INGRESO;
+        end else begin
+            estado_actual <= estado_siguiente;
+        end
+    end
+endmodule
