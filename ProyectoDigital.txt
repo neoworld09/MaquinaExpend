@@ -1,0 +1,560 @@
+`timescale 1ns / 1ps
+
+
+
+module LCD_Top(
+                CLOCK_50,  //50 MZ
+                 LCD_RW,   //LCD Read/Write Select, 0 = Write, 1 = Read
+                 LCD_EN,   //LCD Enable
+                 LCD_RS,   //LCD Command/Data Select, 0 = Command, 1 = Data
+                 LCD_DATA, //LCD Data bus 8 bits
+						
+						
+						S,
+						btn1,
+						btn2,
+						btn3,
+						reset,
+						producto1,
+						producto2,
+						resultado, 
+						pwm1,
+						pwm2					    
+						
+					  
+					  );
+
+
+reg [8:0] Mostrar_10 ;
+reg [8:0] Mostrar_11 ;
+reg [8:0] Mostrar_12 ;
+reg [8:0] Mostrar_13 ;
+reg [8:0] Mostrar_14 ;
+reg [8:0] Mostrar_15 ;
+reg [8:0] Mostrar_16 ;
+reg [8:0] Mostrar_17 ;
+reg [8:0] Mostrar_18 ;
+reg [8:0] Mostrar_19  ;
+reg [8:0] Mostrar_110 ;
+reg [8:0] Mostrar_111 ;
+reg [8:0] Mostrar_112 ;
+reg [8:0] Mostrar_113 ;
+reg [8:0] Mostrar_114 ;
+reg [8:0] Mostrar_115 ;
+reg [8:0] Mostrar_20  ;
+reg [8:0] Mostrar_21  ;
+reg [8:0] Mostrar_22  ;
+reg [8:0] Mostrar_23  ;
+reg [8:0] Mostrar_24  ;
+reg [8:0] Mostrar_25  ;
+reg [8:0] Mostrar_26  ;
+reg [8:0] Mostrar_27  ;
+reg [8:0] Mostrar_28  ;
+reg [8:0] Mostrar_29  ;
+reg [8:0] Mostrar_210 ;
+reg [8:0] Mostrar_211 ;
+reg [8:0] Mostrar_212 ;
+reg [8:0] Mostrar_213 ;
+reg [8:0] Mostrar_214 ;
+reg [8:0] Mostrar_215 ;               
+reg [27:0]contador;
+reg [27:0]contador1;
+reg[27:0] frecuencia;
+reg [1:0] max;
+reg [27:0] scontador;
+reg [27:0] scontador1;
+reg[27:0] sfrecuencia;
+reg [1:0] smax;
+
+
+input CLOCK_50;       //50 MHz
+inout [7:0] LCD_DATA; //LCD Data bus 8 bits
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+
+    input wire btn1;
+    input wire btn2;
+    input wire btn3;
+    input wire reset;
+    input wire producto1;
+    input wire producto2;
+    output reg [7:0] resultado;
+    output reg pwm1;
+    output reg pwm2;
+    
+output LCD_RW;        //LCD Read/Write Select, 0 = Write, 1 = Read
+output LCD_EN;        //LCD Enable
+output LCD_RS;        //LCD Command/Data Select, 0 = Command, 1 = Data
+output S;
+
+
+wire DLY_RST;
+
+reg btn1_anterior;
+reg btn2_anterior;
+reg btn3_anterior;
+reg producto1_anterior;
+reg producto2_anterior;
+reg saldo_insuficiente1;
+reg saldo_insuficiente2;
+
+
+
+always @(posedge CLOCK_50) begin
+    if (reset) begin
+        resultado <= 0; // Resetear resultado a cero si se activa el botón de reset
+    end 
+    else if (producto1 && producto2) begin
+        if (!btn1 & ~btn1_anterior) begin
+            resultado <= resultado + 1; // Sumar 1 si se presiona btn1
+             saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 0;
+        end 
+        else if (!btn2 & ~btn2_anterior) begin
+            resultado <= resultado + 2 ; // Sumar 2 si se presiona btn2
+            saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 0;
+        end
+        else if (!btn3 & ~btn3_anterior) begin
+            resultado <= resultado + 5 ; // Sumar 2 si se presiona btn2
+             saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 0;
+        end
+    end 
+    else if (!producto1 && ~producto1_anterior && resultado >= 7 ) begin
+        resultado <= resultado - 7;
+          saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 0; // Restar 2 unidades si resultado es mayor o igual a 2 y producto1 está presionado
+     
+    end
+      else if (!producto1 && ~producto1_anterior && resultado < 7) begin
+      
+         saldo_insuficiente1 <= 1;
+          saldo_insuficiente2 <= 0;
+              // Si no hay plata suficiente para algun producto no hacer nada 
+    end
+    else if (!producto2 && ~producto2_anterior && resultado < 10 ) begin
+          saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 1; 
+    end
+     else if (!producto2 && ~producto2_anterior && resultado >= 10) begin
+        resultado <= resultado - 10; // Restar 3 unidades si resultado es mayor o igual a 2 y producto1 está presionado
+       saldo_insuficiente1 <= 0;
+              saldo_insuficiente2 <= 0;
+    end
+    
+    btn1_anterior <= !btn1;
+    btn2_anterior <= !btn2;
+    btn3_anterior <= !btn3;
+    producto1_anterior <= !producto1;
+    producto2_anterior <= !producto2;
+end
+
+
+
+always@ (posedge    CLOCK_50)begin
+	
+	if(contador>1_000_000) begin
+	contador=0;
+	end // Contador partir frecuencia cuando llega a 1.000.000 posedge
+	
+	if(contador1>1_000) begin
+	contador1=0;
+	end // Contador partir frecuencia cuando llega a 1.000.000 posedge
+	
+	if (contador1==0) begin // Verifica inicio un nuevo ciclo
+	if(frecuencia==90_001)begin // Verifica valor maximo que garantiza el servomotor en 135°
+	max=1; // Si el servomotor esta 135°, max = 1 
+	end 
+	if (frecuencia==0)begin // Verifica valor minimo que garantiza el servomotor en 0°
+	max=0; // Si el servomotor esta 0°, max = 0
+	end
+	if (max==0) begin // Si servo esta en 0° se suma 1 a esta frecuencia que aumenta progresivamente de 5% a 10% el pwm
+	frecuencia=frecuencia+1;
+	end else begin // Si servo esta en 135° se resta 1 a esta frecuencia que disminuye progresivamente de 10% a 5% el pwm
+	frecuencia=frecuencia-1;
+	end
+	end
+	
+	if(contador<(50_000+frecuencia)&& !producto1==1&& saldo_insuficiente1==0 )begin // PWM solo estara arriba entre 5% y 10% de 20 ms de periodo para movimiento servo
+	pwm1=1;
+	end else begin
+	pwm1=0;
+	end
+	contador=contador+1;
+	contador1=contador1+1;
+	
+	//segundo servomotor
+		if(scontador>1_000_000) begin
+	scontador=0;
+	end // Contador partir frecuencia cuando llega a 1.000.000 posedge
+	
+	if(scontador1>1_000) begin
+	scontador1=0;
+	end // Contador partir frecuencia cuando llega a 1.000.000 posedge
+	
+	if (scontador1==0) begin // Verifica inicio un nuevo ciclo
+	if(sfrecuencia==90_001)begin // Verifica valor maximo que garantiza el servomotor en 135°
+	smax=1; // Si el servomotor esta 135°, max = 1 
+	end 
+	if (sfrecuencia==0)begin // Verifica valor minimo que garantiza el servomotor en 0°
+	smax=0; // Si el servomotor esta 0°, max = 0
+	end
+	if (smax==0) begin // Si servo esta en 0° se suma 1 a esta frecuencia que aumenta progresivamente de 5% a 10% el pwm
+	sfrecuencia=frecuencia+1;
+	end else begin // Si servo esta en 135° se resta 1 a esta frecuencia que disminuye progresivamente de 10% a 5% el pwm
+	sfrecuencia=frecuencia-1;
+	end
+	end
+	
+	if(scontador<(50_000+sfrecuencia)&& !producto2==1&& saldo_insuficiente2==0 )begin // PWM solo estara arriba entre 5% y 10% de 20 ms de periodo para movimiento servo
+	pwm2=1;
+	end else begin
+	pwm2=0;
+	end
+	scontador=scontador+1;
+	scontador1=scontador1+1;
+end
+
+
+
+
+
+
+
+
+
+
+
+assign S =  saldo_insuficiente1 || saldo_insuficiente2 ;
+
+
+
+
+Reset_Delay r0 ( .iCLK(CLOCK_50),.oRESET(DLY_RST)    );
+
+always @ ( CLOCK_50)begin
+
+
+case(S)
+
+	0:begin
+Mostrar_10<=9'h154;//T
+      Mostrar_11<=9'h155;//U
+      Mostrar_12<=9'h120;//esp
+      Mostrar_13<=9'h153;//S
+      Mostrar_14<=9'h141;//A
+      Mostrar_15<=9'h14C;//L
+      Mostrar_16<=9'h144;//D
+      Mostrar_17<=9'h14F;//O
+      Mostrar_18<=9'h120;//esp
+      Mostrar_19<=9'h145;//E
+      Mostrar_110<=9'h153;//S
+      Mostrar_111<=9'h13A;//:
+      Mostrar_112<=9'h120;//ESP
+      Mostrar_113<=9'h120;//Esp
+      Mostrar_114<=9'h120;//Esp
+      Mostrar_115<=9'h120;//ESP
+      Mostrar_20<=9'h124;//$
+      
+       if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)
+         
+      )
+      begin
+     
+        Mostrar_21 <= 9'h131;
+      end
+      else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)
+      )
+      begin
+             Mostrar_21 <= 9'h132;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)
+       )
+       begin
+     
+        Mostrar_21 <= 9'h133;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)
+       )
+       begin
+     
+        Mostrar_21 <= 9'h134;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+       (resultado[6]==0 && resultado[5]==1 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)
+          )
+       begin
+     
+        Mostrar_21 <= 9'h135;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)
+                )
+       begin
+     
+        Mostrar_21 <= 9'h136;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)
+)
+begin
+     
+        Mostrar_21 <= 9'h137;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)
+ )
+      begin
+     
+        Mostrar_21 <= 9'h138;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)
+ )
+      begin
+    
+        Mostrar_21 <= 9'h139;
+      end 
+      else 
+      begin
+      Mostrar_21 <= 9'h130;
+      end
+ 
+      
+     
+      if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)
+      )
+      begin
+     
+        Mostrar_22 <= 9'h131;
+      end
+      else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)
+      )
+      begin
+             Mostrar_22 <= 9'h132;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)
+       )
+       begin
+     
+        Mostrar_22 <= 9'h133;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)
+       )
+       begin
+     
+        Mostrar_22 <= 9'h134;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)
+       )
+       begin
+     
+        Mostrar_22 <= 9'h135;
+      end
+       else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)
+       )
+       begin
+     
+        Mostrar_22 <= 9'h136;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==1 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)
+      )begin
+     
+        Mostrar_22 <= 9'h137;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==0)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==0)
+      )
+      begin
+     
+        Mostrar_22 <= 9'h138;
+      end else if ((resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==0 && resultado[4]==1 && resultado[3]==1 && resultado[2]==1 && resultado[1]==0 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==0 && resultado[3]==0 && resultado[2]==1 && resultado[1]==1 && resultado[0]==1)||
+          (resultado[6]==0 && resultado[5]==1 && resultado[4]==1 && resultado[3]==0 && resultado[2]==0 && resultado[1]==0 && resultado[0]==1)
+      )
+      begin
+    
+        Mostrar_22 <= 9'h139;
+      end 
+      else 
+      begin
+      Mostrar_22 <= 9'h130;
+      end
+ 
+     
+      Mostrar_23<=9'h130;//esp
+      if (resultado >= 4'b1010) begin
+      Mostrar_24<=9'h130;//esp
+     end
+       else 
+      begin
+      Mostrar_24 <= 9'h120;
+      end
+      Mostrar_25<=9'h120;//ESP
+      Mostrar_26<=9'h120;//esp
+      Mostrar_27<=9'h120;//ESP
+      Mostrar_28<=9'h120;//esp
+      Mostrar_29<=9'h120;//esp
+      Mostrar_210<=9'h120; //esp
+      Mostrar_211<=9'h120;//esp
+      Mostrar_212<=9'h120;//esp
+      Mostrar_213<=9'h120;//esp
+      Mostrar_214<=9'h120;//ESP
+      Mostrar_215<=9'h120;//ESP
+	end
+		
+
+	1:begin
+	 Mostrar_10<=9'h120;//esp
+	 Mostrar_10<=9'h149;//I
+      Mostrar_11<=9'h14E;//N 
+      Mostrar_12<=9'h153;//S
+      Mostrar_13<=9'h155;//U
+      Mostrar_14<=9'h146;//F
+      Mostrar_15<=9'h149;//I
+      Mostrar_16<=9'h143;//C
+      Mostrar_17<=9'h149;//I
+      Mostrar_18<=9'h145;//E
+      Mostrar_19<=9'h14E;//N
+      Mostrar_110<=9'h154;//T
+      Mostrar_111<=9'h145;//E
+      Mostrar_112<=9'h120;//esp
+      Mostrar_113<=9'h120;//esp
+      Mostrar_114<=9'h120;//esp
+      Mostrar_115<=9'h120;//esp
+      Mostrar_20<=9'h124;// 
+      if(!producto1)begin 
+      Mostrar_21<=9'h137;//N
+      end
+      else begin
+      Mostrar_21<=9'h130;//N
+      end
+      
+      Mostrar_22<=9'h130;//S
+      Mostrar_23<=9'h130;//U
+      if ( resultado >= 4'b1001)begin
+      Mostrar_24<=9'h120;//N
+      end
+      else begin 
+      Mostrar_24<=9'h120;
+      end
+      
+      Mostrar_25<=9'h120;//I
+      Mostrar_26<=9'h120;//C
+      Mostrar_27<=9'h120;//I
+      Mostrar_28<=9'h120;//E
+      Mostrar_29<=9'h120;//N
+      Mostrar_210<=9'h120; //T
+      Mostrar_211<=9'h120;//E
+      Mostrar_212<=9'h120;//esp
+      Mostrar_213<=9'h120;//esp
+      Mostrar_214<=9'h120;//ESP
+      Mostrar_215<=9'h120;//ESP
+	end
+		
+	
+	
+endcase
+
+end
+
+LCD_TEST u5 (//Host Side
+         .iCLK(CLOCK_50),
+         .iRST_N(DLY_RST),
+             //    LCD Side
+         .LCD_DATA(LCD_DATA),
+         .LCD_RW(LCD_RW),
+         .LCD_EN(LCD_EN),
+         .LCD_RS(LCD_RS),   
+         .Mostrar_10(Mostrar_10),
+		   .Mostrar_11(Mostrar_11),
+			.Mostrar_12(Mostrar_12),
+			.Mostrar_13(Mostrar_13),
+			.Mostrar_14(Mostrar_14),
+			.Mostrar_15(Mostrar_15),
+			.Mostrar_16(Mostrar_16),
+			.Mostrar_17(Mostrar_17),
+			.Mostrar_18(Mostrar_18),
+			.Mostrar_19(Mostrar_19),
+			.Mostrar_110(Mostrar_110),
+			.Mostrar_111(Mostrar_111),
+			.Mostrar_112(Mostrar_112),
+			.Mostrar_113(Mostrar_113),
+			.Mostrar_114(Mostrar_114),
+			.Mostrar_115(Mostrar_115),
+			.Mostrar_20(Mostrar_20),
+			.Mostrar_21(Mostrar_21),
+			.Mostrar_22(Mostrar_22),
+			.Mostrar_23(Mostrar_23),
+			.Mostrar_24(Mostrar_24),
+			.Mostrar_25(Mostrar_25),
+			.Mostrar_26(Mostrar_26),
+			.Mostrar_27(Mostrar_27),
+			.Mostrar_28(Mostrar_28),
+			.Mostrar_29(Mostrar_29),
+			.Mostrar_210(Mostrar_210),
+			.Mostrar_211(Mostrar_211),
+			.Mostrar_212(Mostrar_212),
+			.Mostrar_213(Mostrar_213),
+			.Mostrar_214(Mostrar_214),
+			.Mostrar_215(Mostrar_215)
+             );
+
+
+endmodule
